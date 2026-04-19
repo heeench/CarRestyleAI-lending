@@ -4,5 +4,6 @@ import sitemap from "@astrojs/sitemap";
 
 export default defineConfig({
   integrations: [react(), sitemap()],
-  site: "https://carrestyle.ai"
+  site: "https://heeench.github.io",
+  base: "/CarRestyleAI-lending"
 });
