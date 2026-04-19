@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#040b13" />
+      <stop offset="52%" stop-color="#091521" />
+      <stop offset="100%" stop-color="#050c14" />
+    </linearGradient>
+    <radialGradient id="glowA" cx="15%" cy="18%" r="55%">
+      <stop offset="0%" stop-color="#8dd7ff" stop-opacity="0.24" />
+      <stop offset="100%" stop-color="#8dd7ff" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="glowB" cx="80%" cy="72%" r="45%">
+      <stop offset="0%" stop-color="#60e6dc" stop-opacity="0.18" />
+      <stop offset="100%" stop-color="#60e6dc" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <rect width="1200" height="630" fill="url(#glowA)" />
+  <rect width="1200" height="630" fill="url(#glowB)" />
+
+  <rect x="66" y="68" width="1068" height="494" rx="36" fill="rgba(11,21,33,0.72)" stroke="rgba(159,196,225,0.16)" />
+  <text x="108" y="164" fill="#8dd7ff" font-size="26" font-family="Manrope, Arial, sans-serif" letter-spacing="6">CARRESTYLE AI</text>
+  <text x="108" y="260" fill="#ecf5ff" font-size="68" font-family="Manrope, Arial, sans-serif" font-weight="700">
+    <tspan x="108" dy="0">Визуализация детейлинга</tspan>
+    <tspan x="108" dy="78">и тюнинга на фото</tspan>
+    <tspan x="108" dy="78">автомобиля клиента</tspan>
+  </text>
+  <text x="108" y="514" fill="#9eb3c7" font-size="30" font-family="Manrope, Arial, sans-serif">
+    Показ результата до старта работ. Быстрее согласование. Больше доверия.
+  </text>
+</svg>

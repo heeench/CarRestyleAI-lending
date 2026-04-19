@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>CarRestyle AI</title>
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#caefff" />
+      <stop offset="100%" stop-color="#8dd7ff" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="18" fill="#07111c" />
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="none" stroke="#8dd7ff" stroke-opacity="0.24" />
+  <path d="M14 38c4-10 14-16 24-16 5 0 9 1 13 3-4-2-8-2-11-2-10 0-16 5-20 11h20l-3 4H14Z" fill="url(#bg)" />
+  <circle cx="22" cy="42" r="4" fill="#caefff" />
+  <circle cx="42" cy="42" r="4" fill="#caefff" />
+</svg>

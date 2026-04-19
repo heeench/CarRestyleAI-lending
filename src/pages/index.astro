@@ -1,0 +1,375 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CarSpotlight from "../components/CarSpotlight";
+import LeadForm from "../components/LeadForm";
+
+const benefitCards = [
+  {
+    number: "01",
+    title: "Клиенту проще принять решение",
+    text: "Когда будущий результат виден на его машине, согласование идёт быстрее и спокойнее."
+  },
+  {
+    number: "02",
+    title: "Меньше переписки и лишних пояснений",
+    text: "Ключевые варианты обсуждаются на одном экране, а не в цепочке референсов, скриншотов и сообщений."
+  },
+  {
+    number: "03",
+    title: "Более сильная подача услуги",
+    text: "Студия выглядит технологично и помогает клиенту легче почувствовать ценность работ."
+  }
+];
+
+const useCases = [
+  {
+    title: "Оклейка и смена цвета",
+    text: "Покажите несколько вариантов внешнего вида ещё до старта работ."
+  },
+  {
+    title: "Антихром, диски и акценты",
+    text: "Сравнивайте детали, которые обычно сложнее объяснить только на словах."
+  },
+  {
+    title: "Согласование образа до старта",
+    text: "Соберите понятный визуальный вариант и быстрее переведите разговор к следующему шагу."
+  }
+];
+
+const decisionStages = [
+  {
+    index: "01",
+    title: "Фото клиента",
+    text: "Берёте привычную фотографию автомобиля без 3D-моделей и шаблонных сцен."
+  },
+  {
+    index: "02",
+    title: "Нужные зоны кузова",
+    text: "Выделяете детали, которые хотите показать: кузов, бамперы, диски, зеркала и не только."
+  },
+  {
+    index: "03",
+    title: "Варианты работ",
+    text: "Показываете оклейку, антихром, цвет и другие изменения прямо на машине клиента."
+  },
+  {
+    index: "04",
+    title: "Решение и запись",
+    text: "Разговор быстрее приходит к понятному выбору, а студии проще перевести клиента к записи."
+  }
+];
+
+const audiencePills = ["Детейлинг", "Оклейка", "Антихром", "Диски", "Тюнинг-ателье"];
+
+const spotlightBenefits = [
+  "Понятно за несколько секунд, с чем именно работает сервис.",
+  "Подходит для оклейки, антихрома, цвета, дисков и других внешних доработок.",
+  "Сразу создаёт ощущение сильного и технологичного сервиса."
+];
+
+const faqItems = [
+  {
+    question: "Для каких студий подходит CarRestyle AI?",
+    answer:
+      "Для детейлинг-студий, студий оклейки, антихрома, тюнинг-ателье и других форматов, где клиенту важно заранее увидеть будущий вид автомобиля."
+  },
+  {
+    question: "Нужна ли 3D-модель автомобиля?",
+    answer:
+      "Нет. CarRestyle AI строит визуализацию на фото реального автомобиля клиента, поэтому вход в сценарий проще и ближе к реальной продаже."
+  },
+  {
+    question: "Что можно показать клиенту?",
+    answer:
+      "Оклейку, цвет, антихром, диски, отдельные кузовные элементы и другие визуальные изменения, которые нужно согласовать до начала работ."
+  },
+  {
+    question: "Нужно ли долго внедрять сервис?",
+    answer:
+      "Нет. Платформа подаётся вокруг прикладного сценария студии: показать будущий результат на фото клиента и быстрее довести его до записи."
+  },
+  {
+    question: "Можно ли посмотреть на своих фото и сценариях?",
+    answer:
+      "Да. Лучший формат демонстрации — взять ваш кейс и показать, как CarRestyle AI будет работать именно в вашей студии."
+  }
+];
+
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "CarRestyle AI",
+  url: "https://carrestyle.ai",
+  logo: "https://carrestyle.ai/favicon.svg",
+  email: "hello@carrestyle.ai",
+  description: "Платформа для визуализации детейлинга и тюнинга на фото автомобиля клиента.",
+  contactPoint: {
+    "@type": "ContactPoint",
+    contactType: "sales",
+    email: "hello@carrestyle.ai",
+    availableLanguage: ["ru"]
+  }
+};
+
+const softwareSchema = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "CarRestyle AI",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  inLanguage: "ru",
+  description:
+    "Платформа для визуализации детейлинга и тюнинга на фото реального автомобиля клиента.",
+  audience: {
+    "@type": "Audience",
+    audienceType: "Детейлинг-студии, оклейка, антихром, тюнинг-ателье"
+  },
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "RUB",
+    description: "Запрос демонстрации"
+  },
+  publisher: {
+    "@type": "Organization",
+    name: "CarRestyle AI",
+    url: "https://carrestyle.ai"
+  }
+};
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqItems.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: item.answer
+    }
+  }))
+};
+---
+
+<BaseLayout
+  title="CarRestyle AI — визуализация детейлинга и тюнинга на фото автомобиля клиента"
+  description="CarRestyle AI для детейлинг-студий, оклейки, антихрома и тюнинг-ателье: покажите будущий вид автомобиля на фото клиента и быстрее доведите его до записи."
+  canonical="/"
+>
+  <Fragment slot="head">
+    <script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />
+    <script type="application/ld+json" set:html={JSON.stringify(softwareSchema)} />
+    <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
+  </Fragment>
+
+  <main class="page-shell" id="top">
+    <header class="site-header">
+      <a class="brand-mark" href="#top">
+        <span class="brand-mark-dot"></span>
+        <span>CarRestyle AI</span>
+      </a>
+
+      <nav class="site-nav" aria-label="Навигация по лендингу">
+        <a href="#spotlight">Демонстрация</a>
+        <a href="#benefits">Выгоды</a>
+        <a href="#how-it-works">Сценарий</a>
+        <a href="#faq">Вопросы</a>
+      </nav>
+
+      <a class="button button-primary header-cta" href="#contact">Получить демо</a>
+    </header>
+
+    <section class="hero">
+      <div class="hero-copy panel">
+        <p class="eyebrow">Для детейлинг-студий, оклейки, антихрома и тюнинга</p>
+        <h1>Визуализация детейлинга и тюнинга на фото автомобиля клиента.</h1>
+        <p class="lead">
+          Покажите оклейку, антихром, цвет, диски и другие работы прямо на машине клиента,
+          чтобы быстрее согласовать внешний вид и довести его до записи.
+        </p>
+
+        <div class="hero-actions">
+          <a class="button button-primary" href="#contact">Получить демонстрацию</a>
+          <a class="button button-secondary" href="#spotlight">Посмотреть, как это выглядит</a>
+        </div>
+
+        <div class="hero-audience">
+          {audiencePills.map((item) => (
+            <span class="audience-pill">{item}</span>
+          ))}
+        </div>
+
+        <div class="hero-meta">
+          <div class="hero-metric">
+            <span>Основа сценария</span>
+            <strong>Фото реального автомобиля клиента</strong>
+          </div>
+          <div class="hero-metric">
+            <span>Что получает студия</span>
+            <strong>Более быстрое согласование работ</strong>
+          </div>
+          <div class="hero-metric">
+            <span>Как это ощущается</span>
+            <strong>Технологичный и дорогой сервис</strong>
+          </div>
+        </div>
+        
+        <div class="hero-benefits">
+          <div class="hero-benefits-head">
+            <p class="eyebrow">Что получает студия</p>
+            <p>CarRestyle AI помогает быстрее перевести интерес клиента в понятное решение.</p>
+          </div>
+
+          <div class="hero-benefits-grid" aria-label="Ключевые выгоды для студии">
+            <article class="hero-benefit-card">
+              <h3>Клиент быстрее решается</h3>
+              <p>Будущий вид автомобиля становится понятнее, поэтому путь к записи получается короче.</p>
+            </article>
+            <article class="hero-benefit-card">
+              <h3>Диалог становится предметнее</h3>
+              <p>Обсуждение легче перевести в конкретный выбор, когда результат уже виден заранее.</p>
+            </article>
+            <article class="hero-benefit-card">
+              <h3>Услуга воспринимается сильнее</h3>
+              <p>Современная подача усиливает доверие и поднимает ценность предложения в глазах клиента.</p>
+            </article>
+          </div>
+
+          <div class="hero-benefit-tags">
+            <span>Меньше сомнений</span>
+            <span>Быстрее согласование</span>
+            <span>Сильнее подача</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="spotlight-section panel" id="spotlight">
+      <div class="spotlight-copy">
+        <p class="eyebrow">Демонстрация продукта</p>
+        <h2>Не «примерно так будет», а вот как это выглядит на машине клиента.</h2>
+        <p>
+          Подсветка зон кузова сразу объясняет логику CarRestyle AI: сервис работает с
+          реальным автомобилем, а не с абстрактным шаблоном. Поэтому идея считывается быстро и продаёт сильнее.
+        </p>
+
+        <ul class="benefit-list">
+          {spotlightBenefits.map((benefit) => (
+            <li>{benefit}</li>
+          ))}
+        </ul>
+      </div>
+
+      <div class="spotlight-stage-wrap">
+        <div class="spotlight-stage-head">
+          <div class="hero-visual-status">
+            <span class="status-dot"></span>
+            <span>Подсветка деталей кузова</span>
+          </div>
+          <p>Фирменная сцена лендинга, которая показывает ценность продукта без длинных объяснений.</p>
+        </div>
+
+        <CarSpotlight client:visible />
+      </div>
+    </section>
+
+    <section class="section-block" id="benefits">
+      <div class="section-heading">
+        <p class="eyebrow">Зачем это студии</p>
+        <h2>CarRestyle AI помогает быстрее согласовывать работы и увереннее вести клиента к записи.</h2>
+      </div>
+
+      <div class="card-grid card-grid-three">
+        {benefitCards.map((item) => (
+          <article class="value-card panel">
+            <span class="value-number">{item.number}</span>
+            <h3>{item.title}</h3>
+            <p>{item.text}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section class="use-cases section-block">
+      <div class="section-heading">
+        <p class="eyebrow">Где это особенно полезно</p>
+        <h2>Лучше всего работает в сценариях, где клиенту важно увидеть результат заранее.</h2>
+      </div>
+
+      <div class="card-grid card-grid-three">
+        {useCases.map((item) => (
+          <article class="info-card panel">
+            <h3>{item.title}</h3>
+            <p>{item.text}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section class="decision-flow panel" id="how-it-works">
+      <div class="decision-flow-copy">
+        <p class="eyebrow">Как проходит согласование</p>
+        <h2>Когда клиент видит будущий результат на своей машине, решение приходит быстрее.</h2>
+        <p>
+          Вместо длинных объяснений студия показывает понятный путь: фото, нужные зоны,
+          варианты работ и следующий шаг.
+        </p>
+      </div>
+
+      <div class="decision-rail" aria-label="Сценарий работы с CarRestyle AI">
+        {decisionStages.map((stage) => (
+          <article class="decision-stage">
+            <span class="decision-node" aria-hidden="true"></span>
+            <span class="decision-index">{stage.index}</span>
+            <h3>{stage.title}</h3>
+            <p>{stage.text}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <section class="faq-section section-block" id="faq">
+      <div class="section-heading">
+        <p class="eyebrow">Вопросы</p>
+        <h2>Коротко о том, что важно для студии перед демонстрацией.</h2>
+      </div>
+
+      <div class="faq-list">
+        {faqItems.map((item) => (
+          <details class="faq-item">
+            <summary>{item.question}</summary>
+            <p>{item.answer}</p>
+          </details>
+        ))}
+      </div>
+    </section>
+
+    <section class="contact panel" id="contact">
+      <div class="contact-copy">
+        <p class="eyebrow">Получить демонстрацию</p>
+        <h2>Покажем, как CarRestyle AI может помочь именно вашей студии.</h2>
+        <p>
+          Оставьте контакт и коротко напишите, какие работы вы хотите показывать клиентам:
+          оклейка, антихром, цвет, диски или другие сценарии.
+        </p>
+
+        <div class="contact-benefits">
+          <span>Покажем на вашем кейсе</span>
+          <span>Без долгого внедрения</span>
+          <span>Сразу в логике продаж</span>
+        </div>
+      </div>
+
+      <LeadForm client:idle />
+    </section>
+
+    <footer class="site-footer">
+      <p>© 2026 CarRestyle AI — визуализация детейлинга и тюнинга на фото автомобиля клиента.</p>
+      <a href="mailto:hello@carrestyle.ai">hello@carrestyle.ai</a>
+    </footer>
+
+    <div class="mobile-sticky-cta">
+      <a class="button button-primary" href="#contact">Получить демо</a>
+    </div>
+  </main>
+</BaseLayout>
