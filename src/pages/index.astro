@@ -1,8 +1,8 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import bmwAfterImage from "../assets/bmw-after.jpg";
+import bmwBeforeImage from "../assets/bmw-before.jpg";
 import carPreviewImage from "../assets/car-preview.png";
-import jeepAfterImage from "../assets/jeep-after.jpg";
-import jeepBeforeImage from "../assets/jeep-before.jpg";
 import bodyMain from "../assets/surfaces/body_main.png";
 import frontBumper from "../assets/surfaces/front_bumper.png";
 import frontWheel from "../assets/surfaces/front_wheel.png";
@@ -307,7 +307,7 @@ const faqSchema = {
                   class="hero-compare-image hero-compare-after-image"
                   decoding="async"
                   fetchpriority="high"
-                  src={jeepAfterImage.src}
+                  src={bmwAfterImage.src}
                 />
               </div>
               <div class="hero-compare-before-panel">
@@ -316,11 +316,12 @@ const faqSchema = {
                   class="hero-compare-image hero-compare-before-image"
                   decoding="async"
                   fetchpriority="high"
-                  src={jeepBeforeImage.src}
+                  src={bmwBeforeImage.src}
                 />
               </div>
               <span class="hero-compare-label hero-compare-label-before">До</span>
               <span class="hero-compare-label hero-compare-label-after">После</span>
+              <button class="hero-compare-fullscreen" type="button">Во весь экран</button>
               <span class="hero-compare-handle" aria-hidden="true"><span></span></span>
               <input
                 aria-label="Сравнить автомобиль до и после"
@@ -614,6 +615,14 @@ const faqSchema = {
           ></textarea>
         </label>
 
+        <label class="lead-consent lead-field-full">
+          <input name="Согласие" required type="checkbox" value="Принято" />
+          <span>
+            Я принимаю <a href="/user-agreement/" target="_blank" rel="noopener">пользовательское соглашение</a> и
+            даю согласие на обработку персональных данных для связи по заявке.
+          </span>
+        </label>
+
         <button class="button button-primary lead-submit" type="submit">
           Получить демо-доступ
         </button>
@@ -627,7 +636,10 @@ const faqSchema = {
 
     <footer class="site-footer">
       <p>© 2026 CarRestyle AI — визуализация детейлинга и тюнинга на фото автомобиля клиента.</p>
-      <a href="mailto:hello@carrestyle.ai">hello@carrestyle.ai</a>
+      <div class="site-footer-links">
+        <a href="/user-agreement/">Пользовательское соглашение</a>
+        <a href="mailto:hello@carrestyle.ai">hello@carrestyle.ai</a>
+      </div>
     </footer>
 
     <div class="mobile-sticky-cta">
@@ -635,8 +647,53 @@ const faqSchema = {
     </div>
   </main>
 
+  <dialog class="compare-dialog" aria-label="Сравнение автомобиля до и после во весь экран">
+    <div class="compare-dialog-shell">
+      <div class="compare-dialog-head">
+        <span>До / После</span>
+        <button class="compare-dialog-close" type="button" aria-label="Закрыть полноэкранное сравнение">
+          Закрыть
+        </button>
+      </div>
+
+      <div class="hero-compare-shell compare-dialog-frame">
+        <div class="hero-compare-stage" style="--compare-position: 50%;">
+          <div class="hero-compare-after-panel">
+            <img
+              alt="Автомобиль после визуализации"
+              class="hero-compare-image hero-compare-after-image"
+              decoding="async"
+              src={bmwAfterImage.src}
+            />
+          </div>
+          <div class="hero-compare-before-panel">
+            <img
+              alt="Автомобиль до визуализации"
+              class="hero-compare-image hero-compare-before-image"
+              decoding="async"
+              src={bmwBeforeImage.src}
+            />
+          </div>
+          <span class="hero-compare-label hero-compare-label-before">До</span>
+          <span class="hero-compare-label hero-compare-label-after">После</span>
+          <span class="hero-compare-handle" aria-hidden="true"><span></span></span>
+          <input
+            aria-label="Сравнить автомобиль до и после во весь экран"
+            autocomplete="off"
+            class="hero-compare-range"
+            data-default-value="50"
+            max="100"
+            min="0"
+            type="range"
+            value="50"
+          />
+        </div>
+      </div>
+    </div>
+  </dialog>
+
   <script is:inline>
-    document.querySelectorAll(".hero-compare-stage").forEach((stage) => {
+    const initCompareStage = (stage) => {
       const range = stage.querySelector(".hero-compare-range");
       if (!(range instanceof HTMLInputElement)) return;
       range.value = range.dataset.defaultValue || "50";
@@ -647,6 +704,30 @@ const faqSchema = {
 
       updateCompare();
       range.addEventListener("input", updateCompare);
+    };
+
+    document.querySelectorAll(".hero-compare-stage").forEach(initCompareStage);
+
+    const compareDialog = document.querySelector(".compare-dialog");
+    const openCompareDialog = document.querySelector(".hero-compare-fullscreen");
+    const closeCompareDialog = document.querySelector(".compare-dialog-close");
+
+    openCompareDialog?.addEventListener("click", () => {
+      if (compareDialog instanceof HTMLDialogElement) {
+        compareDialog.showModal();
+      }
+    });
+
+    closeCompareDialog?.addEventListener("click", () => {
+      if (compareDialog instanceof HTMLDialogElement) {
+        compareDialog.close();
+      }
+    });
+
+    compareDialog?.addEventListener("click", (event) => {
+      if (event.target === compareDialog && compareDialog instanceof HTMLDialogElement) {
+        compareDialog.close();
+      }
     });
   </script>
 </BaseLayout>
