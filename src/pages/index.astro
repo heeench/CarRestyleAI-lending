@@ -587,8 +587,8 @@ const faqSchema = {
 
       <form
         class="lead-form"
-        action="mailto:carrestyleai@mail.ru?subject=Запрос%20демонстрации%20CarRestyle%20AI"
-        enctype="text/plain"
+        action="/send.php"
+        data-lead-form
         method="post"
       >
         <label class="lead-field">
@@ -627,8 +627,10 @@ const faqSchema = {
           Получить демо-доступ
         </button>
 
+        <p class="lead-status" data-lead-status role="status" aria-live="polite"></p>
+
         <p class="lead-note">
-          После отправки откроется письмо с заявкой. Или напишите напрямую на{" "}
+          После отправки мы получим заявку на почту и свяжемся с вами. Или напишите напрямую на{" "}
           <a href="mailto:carrestyleai@mail.ru">carrestyleai@mail.ru</a>
         </p>
       </form>
@@ -729,5 +731,55 @@ const faqSchema = {
         compareDialog.close();
       }
     });
+
+    const leadForm = document.querySelector("[data-lead-form]");
+    const leadStatus = document.querySelector("[data-lead-status]");
+
+    if (leadForm instanceof HTMLFormElement && leadStatus instanceof HTMLElement) {
+      leadForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        if (!leadForm.reportValidity()) return;
+
+        const submitButton = leadForm.querySelector("button[type='submit']");
+        const formData = new FormData(leadForm);
+        const payload = Object.fromEntries(formData.entries());
+        const previousButtonText = submitButton?.textContent || "";
+
+        if (submitButton instanceof HTMLButtonElement) {
+          submitButton.disabled = true;
+          submitButton.textContent = "Отправляем...";
+        }
+
+        leadStatus.className = "lead-status";
+        leadStatus.textContent = "";
+
+        try {
+          const response = await fetch(leadForm.action, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(payload)
+          });
+
+          if (!response.ok) {
+            throw new Error("Lead request failed");
+          }
+
+          leadForm.reset();
+          leadStatus.className = "lead-status is-success";
+          leadStatus.textContent = "Заявка отправлена. Скоро свяжемся с вами.";
+        } catch {
+          leadStatus.className = "lead-status is-error";
+          leadStatus.textContent = "Не получилось отправить заявку. Напишите напрямую на carrestyleai@mail.ru.";
+        } finally {
+          if (submitButton instanceof HTMLButtonElement) {
+            submitButton.disabled = false;
+            submitButton.textContent = previousButtonText;
+          }
+        }
+      });
+    }
   </script>
 </BaseLayout>
