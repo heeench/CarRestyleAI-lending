@@ -46,7 +46,16 @@ $to = 'carrestyleai@mail.ru';
 $subject = 'Новая заявка CarRestyle AI';
 $submittedAt = date('d.m.Y H:i');
 
-$message = implode("\n", [
+$utmFields = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'landing_path', 'referrer'];
+$attribution = [];
+foreach ($utmFields as $utmField) {
+    $value = field($data, $utmField, 1000);
+    if ($value !== '') {
+        $attribution[$utmField] = $value;
+    }
+}
+
+$messageLines = [
     'Новая заявка с лендинга CarRestyle AI',
     '',
     'Дата: ' . $submittedAt . ' МСК',
@@ -55,9 +64,15 @@ $message = implode("\n", [
     'Контакт: ' . $contact,
     'Сценарий: ' . ($scenario !== '' ? $scenario : 'не указан'),
     'Согласие: ' . $consent,
-    '',
-    'Источник: carrestyleai.ru',
-]);
+];
+
+foreach ($attribution as $key => $value) {
+    $messageLines[] = $key . ': ' . $value;
+}
+
+$messageLines[] = '';
+$messageLines[] = 'Источник: carrestyleai.ru';
+$message = implode("\n", $messageLines);
 
 $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
 $headers = [
@@ -68,12 +83,55 @@ $headers = [
     'Reply-To: CarRestyle AI <carrestyleai@mail.ru>',
 ];
 
+$leadPayload = array_merge([
+    'name' => $name,
+    'studio' => $studio,
+    'contact' => $contact,
+    'scenario' => $scenario,
+    'consent' => 'true',
+    'source' => 'landing',
+], $attribution);
+
+$apiSaved = false;
+$apiError = null;
+$apiUrl = getenv('CARRESTYLE_API_LEADS_URL') ?: 'https://api.carrestyleai.ru/landing/leads';
+$apiBody = json_encode($leadPayload, JSON_UNESCAPED_UNICODE);
+
+if (function_exists('curl_init')) {
+    $ch = curl_init($apiUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+        CURLOPT_POSTFIELDS => $apiBody,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 8,
+    ]);
+    $apiResponse = curl_exec($ch);
+    $apiStatus = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+    $apiSaved = $apiStatus >= 200 && $apiStatus < 300;
+    $apiError = $apiSaved ? null : ($curlError ?: ('API HTTP ' . $apiStatus . ': ' . (string) $apiResponse));
+} else {
+    $context = stream_context_create([
+        'http' => [
+            'method' => 'POST',
+            'header' => "Content-Type: application/json\r\n",
+            'content' => $apiBody,
+            'timeout' => 8,
+        ],
+    ]);
+    $apiResponse = @file_get_contents($apiUrl, false, $context);
+    $apiSaved = $apiResponse !== false;
+    $apiError = $apiSaved ? null : 'API request failed';
+}
+
 $sent = mail($to, $encodedSubject, $message, implode("\r\n", $headers));
 
-if (!$sent) {
+if (!$apiSaved && !$sent) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Mail delivery failed'], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['ok' => false, 'error' => 'Lead save and mail delivery failed', 'api_error' => $apiError], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-echo json_encode(['ok' => true], JSON_UNESCAPED_UNICODE);
+echo json_encode(['ok' => true, 'lead_saved' => $apiSaved, 'mail_sent' => $sent], JSON_UNESCAPED_UNICODE);

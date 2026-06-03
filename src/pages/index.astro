@@ -744,6 +744,10 @@ const faqSchema = {
         const submitButton = leadForm.querySelector("button[type='submit']");
         const formData = new FormData(leadForm);
         const payload = Object.fromEntries(formData.entries());
+        const attribution = window.__carrestyleAttribution || {};
+        ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "landing_path", "referrer"].forEach((key) => {
+          if (attribution[key]) payload[key] = attribution[key];
+        });
         const previousButtonText = submitButton?.textContent || "";
 
         if (submitButton instanceof HTMLButtonElement) {
