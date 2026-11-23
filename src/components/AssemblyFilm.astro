@@ -1,0 +1,62 @@
+<div class="assembly-film">
+  <div class="film-frame">
+    <video muted playsinline preload="metadata" poster="/media/porsche-poster.jpg" aria-label="Сборка Porsche из металлического логотипа">
+      <source src="/media/porsche-assembly.mp4" type="video/mp4" />
+    </video>
+  </div>
+  <div class="film-controls">
+    <button class="button" type="button" data-replay>Повторить сборку ↻</button>
+    <button class="button" type="button" data-toggle>Воспроизвести</button>
+  </div>
+</div>
+
+<script>
+  const film = document.querySelector<HTMLVideoElement>(".assembly-film video");
+  const replay = document.querySelector<HTMLButtonElement>("[data-replay]");
+  const toggle = document.querySelector<HTMLButtonElement>("[data-toggle]");
+  if (film && replay && toggle) {
+    const play = () => void film.play().catch(() => {});
+    replay.addEventListener("click", () => {
+      film.currentTime = 0;
+      play();
+    });
+    toggle.addEventListener("click", () => film.paused ? play() : film.pause());
+    for (const event of ["play", "pause", "ended"]) {
+      film.addEventListener(event, () => {
+        toggle.textContent = film.paused || film.ended ? "Воспроизвести" : "Пауза";
+      });
+    }
+    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) play();
+  }
+</script>
+
+<style>
+  .assembly-film { width: 100%; }
+  .film-frame { position: relative; isolation: isolate; }
+  .film-frame::before {
+    content: "";
+    position: absolute;
+    inset: 62% 4% -2%;
+    background: radial-gradient(ellipse, #0009, #0004 42%, transparent 72%);
+    filter: blur(clamp(8px, 1.4vw, 24px));
+    pointer-events: none;
+  }
+  video {
+    position: relative;
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    --sides: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+    --ends: linear-gradient(to bottom, transparent, #000 22%, #000 77%, transparent);
+    -webkit-mask-image: var(--sides), var(--ends);
+    -webkit-mask-composite: source-in;
+    mask-image: var(--sides), var(--ends);
+    mask-composite: intersect;
+  }
+  .film-controls {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+</style>
