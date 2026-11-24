@@ -1,62 +1,236 @@
-<div class="assembly-film">
+---
+const media = import.meta.env.BASE_URL.replace(/\/?$/, "/") + "media/";
+const poster = media + "porsche-logo-first.webp";
+---
+
+<figure class="assembly-film" data-assembly-film aria-label="Сборка Porsche из логотипа">
+  <svg class="film-filters" width="0" height="0" aria-hidden="true" focusable="false">
+    <filter id="assembly-logo-sharpen" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feConvolveMatrix order="3" kernelMatrix="0 -.32 0 -.32 2.28 -.32 0 -.32 0" edgeMode="duplicate" preserveAlpha="true" />
+    </filter>
+  </svg>
   <div class="film-frame">
-    <video muted playsinline preload="metadata" poster="/media/porsche-poster.jpg" aria-label="Сборка Porsche из металлического логотипа">
-      <source src="/media/porsche-assembly.mp4" type="video/mp4" />
-    </video>
+    <video
+      src={media + "porsche-assembly.mp4"}
+      poster={poster}
+      width="2560"
+      height="1440"
+      muted
+      playsinline
+      preload="auto"
+      controls
+      aria-label="Металлический логотип CarRestyle AI превращается в Porsche"
+    ></video>
+    <img class="film-poster" src={poster} width="2560" height="1440" alt="" fetchpriority="high" />
   </div>
-  <div class="film-controls">
-    <button class="button" type="button" data-replay>Повторить сборку ↻</button>
-    <button class="button" type="button" data-toggle>Воспроизвести</button>
-  </div>
-</div>
+  <figcaption class="film-controls" hidden>
+    <button class="film-button" type="button" data-replay><span aria-hidden="true">↻</span> Повторить сборку</button>
+    <button class="film-button" type="button" data-toggle>Воспроизвести</button>
+    <p class="film-status" role="status"></p>
+  </figcaption>
+</figure>
 
 <script>
-  const film = document.querySelector<HTMLVideoElement>(".assembly-film video");
-  const replay = document.querySelector<HTMLButtonElement>("[data-replay]");
-  const toggle = document.querySelector<HTMLButtonElement>("[data-toggle]");
-  if (film && replay && toggle) {
-    const play = () => void film.play().catch(() => {});
-    replay.addEventListener("click", () => {
-      film.currentTime = 0;
-      play();
-    });
-    toggle.addEventListener("click", () => film.paused ? play() : film.pause());
-    for (const event of ["play", "pause", "ended"]) {
-      film.addEventListener(event, () => {
-        toggle.textContent = film.paused || film.ended ? "Воспроизвести" : "Пауза";
+  const assembly = document.querySelector<HTMLElement>("[data-assembly-film]");
+  const film = assembly?.querySelector("video");
+  const poster = assembly?.querySelector<HTMLImageElement>(".film-poster");
+  const controls = assembly?.querySelector<HTMLElement>(".film-controls");
+  const replay = assembly?.querySelector<HTMLButtonElement>("[data-replay]");
+  const toggle = assembly?.querySelector<HTMLButtonElement>("[data-toggle]");
+  const status = assembly?.querySelector<HTMLElement>(".film-status");
+
+  if (assembly && film && poster && controls && replay && toggle && status) {
+    const motion = matchMedia("(prefers-reduced-motion: reduce)");
+    const introDuration = 1000;
+    let remaining = introDuration;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let scheduledAt = 0;
+    let showingPoster = true;
+    let playPending = false;
+    let playAttempt = 0;
+    let hasStarted = false;
+
+    const isActive = () => timer !== undefined || playPending || (!film.paused && !film.ended);
+
+    const sync = () => {
+      assembly.classList.toggle("show-logo", showingPoster);
+      const resumable = film.currentTime > 0 || remaining < introDuration;
+      toggle.textContent = isActive() ? "Пауза" : resumable && !film.ended ? "Продолжить" : "Воспроизвести";
+    };
+
+    const pause = () => {
+      if (timer !== undefined) {
+        clearTimeout(timer);
+        timer = undefined;
+        remaining = Math.max(0, remaining - (performance.now() - scheduledAt));
+      }
+      playAttempt += 1;
+      playPending = false;
+      film.pause();
+      sync();
+    };
+
+    const playVideo = () => {
+      const attempt = ++playAttempt;
+      playPending = true;
+      sync();
+      film.play().catch(() => {
+        if (attempt !== playAttempt) return;
+        playPending = false;
+        sync();
       });
-    }
-    if (!matchMedia("(prefers-reduced-motion: reduce)").matches) play();
+    };
+
+    const start = () => {
+      hasStarted = true;
+      status.textContent = "";
+      if (!showingPoster || remaining === 0) {
+        playVideo();
+        return;
+      }
+      scheduledAt = performance.now();
+      timer = setTimeout(() => {
+        timer = undefined;
+        remaining = 0;
+        playVideo();
+      }, remaining);
+      sync();
+    };
+
+    const restart = () => {
+      pause();
+      showingPoster = true;
+      remaining = introDuration;
+      film.currentTime = 0;
+      start();
+    };
+
+    const showError = () => {
+      pause();
+      showingPoster = true;
+      replay.disabled = true;
+      toggle.disabled = true;
+      status.textContent = "Ролик не загрузился. Показан начальный кадр.";
+      sync();
+    };
+
+    film.controls = false;
+    controls.hidden = false;
+    sync();
+
+    film.addEventListener("playing", () => {
+      if (film.paused) return;
+      playPending = false;
+      showingPoster = false;
+      sync();
+    });
+    film.addEventListener("pause", sync);
+    film.addEventListener("ended", sync);
+    film.addEventListener("error", showError);
+    if (film.error) showError();
+
+    replay.addEventListener("click", restart);
+    toggle.addEventListener("click", () => {
+      if (isActive()) pause();
+      else if (film.ended) restart();
+      else start();
+    });
+
+    let inView = false;
+    let posterReady = false;
+    const startWhenVisible = () => {
+      if (!hasStarted && posterReady && inView && !document.hidden && !motion.matches && !film.error) start();
+    };
+    const observer = new IntersectionObserver(([entry]) => {
+      inView = entry.intersectionRatio >= 0.2;
+      startWhenVisible();
+    }, { threshold: 0.2 });
+    observer.observe(assembly);
+    poster.decode().catch(() => {}).finally(() => {
+      posterReady = true;
+      startWhenVisible();
+    });
+    document.addEventListener("visibilitychange", startWhenVisible);
+    motion.addEventListener("change", () => {
+      if (motion.matches) pause();
+      else startWhenVisible();
+    });
   }
 </script>
 
 <style>
-  .assembly-film { width: 100%; }
-  .film-frame { position: relative; isolation: isolate; }
-  .film-frame::before {
-    content: "";
-    position: absolute;
-    inset: 62% 4% -2%;
-    background: radial-gradient(ellipse, #0009, #0004 42%, transparent 72%);
-    filter: blur(clamp(8px, 1.4vw, 24px));
-    pointer-events: none;
+  .assembly-film {
+    width: min(100%, 850px);
+    width: min(100%, clamp(500px, calc((100svh - 490px) * 16 / 9), 850px));
+    margin: 0 auto;
   }
-  video {
+
+  .film-filters { position: absolute; pointer-events: none; }
+
+  .film-frame {
+    --film-sides: linear-gradient(90deg, transparent, #0003 3%, #000d 8%, #000 13%, #000 87%, #000d 92%, #0003 97%, transparent);
+    --film-ends: linear-gradient(180deg, transparent, #000 8%, #000 88%, #000b 94%, transparent);
     position: relative;
-    display: block;
-    width: 100%;
     aspect-ratio: 16 / 9;
-    --sides: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
-    --ends: linear-gradient(to bottom, transparent, #000 22%, #000 77%, transparent);
-    -webkit-mask-image: var(--sides), var(--ends);
+    isolation: isolate;
+    -webkit-mask-image: var(--film-sides), var(--film-ends);
     -webkit-mask-composite: source-in;
-    mask-image: var(--sides), var(--ends);
+    mask-image: var(--film-sides), var(--film-ends);
     mask-composite: intersect;
   }
+
+  video, .film-poster {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .film-poster {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    visibility: hidden;
+    filter: url(#assembly-logo-sharpen);
+    pointer-events: none;
+    transition: opacity 150ms ease-out, visibility 0s linear 150ms;
+  }
+
+  .show-logo .film-poster {
+    opacity: 1;
+    visibility: visible;
+    transition: none;
+  }
+
   .film-controls {
     display: flex;
     justify-content: center;
+    align-items: center;
     flex-wrap: wrap;
-    gap: 12px;
+    column-gap: 12px;
+    min-height: 48px;
+  }
+
+  .film-controls[hidden] { display: none; }
+
+  .film-button {
+    min-height: 44px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: var(--text);
+    font-weight: 650;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .film-button:hover { background: #171717; }
+  .film-button:disabled { opacity: 0.65; cursor: default; }
+  .film-status { flex-basis: 100%; color: var(--muted); text-align: center; }
+  .film-status:empty { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .film-poster { transition: none; }
   }
 </style>

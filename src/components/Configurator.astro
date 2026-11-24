@@ -1,0 +1,188 @@
+---
+import {wraps} from '../scripts/finishes.js';
+---
+<div class="config">
+  <header><strong>Porsche 911 GT3 RS</strong><button type="button" class="expand" disabled>Развернуть 4K ↗</button></header>
+  <div class="orbit" tabindex="-1" role="group" aria-label="Вращение автомобиля мышью, касанием или стрелками клавиатуры">
+    <button type="button" hidden class="door-dot" aria-label="Открыть водительскую дверь и войти в салон" title="В салон"></button>
+    <img src={import.meta.env.BASE_URL + "config/poster.webp"} alt="Porsche 911 GT3 RS в студии" loading="lazy" />
+  </div>
+  <p class="hint" role="status">Загрузка модели…</p>
+  <div class="switcher" role="group" aria-label="Разделы конфигуратора">
+    {[["body","Плёнка"],["wheels","Колёса"],["kit","Обвес и посадка"],["cabin","Салон"]].map(([id,label],i)=><button disabled type="button" data-section={id} aria-pressed={i===0}>{label}</button>)}
+  </div>
+  <fieldset disabled data-panel="body"><legend>Кузов</legend>
+    {Object.entries(wraps).map(([key,{label,color}],i) => <button type="button" data-paint={key} aria-pressed={i===0}><i style={`--sample:${color}`}></i>{label}</button>)}
+  </fieldset>
+  {[
+    ["wheel","Диски",[["stock","Заводские"],["blade","Пять лопастей"],["split","Раздвоенные спицы"],["mesh","Сетка"],["turbine","Турбина"]]],
+    ["hood","Капот",[["stock","Штатный"],["sport","Спорт"],["carbon","Спорт · карбон"]]],
+    ["wing","Спойлер",[["stock","Антикрыло RS"],["duck","Утиный хвост"]]],
+    ["stance","Посадка",[["stock","Штатная"],["sport","−25 мм"],["track","−45 мм"]]]
+  ].map(([key,label,options])=><fieldset disabled hidden data-panel={key==="wheel"?"wheels":"kit"}><legend>{label}</legend>{(options as string[][]).map(([value,name],i)=><button type="button" data-group={key} data-option={value} aria-pressed={i===0}>{name}</button>)}</fieldset>)}
+  <div class="cabin-options" data-panel="cabin" hidden>
+    {[
+    ["trim","Обивка",[["graphite","Графит"],["cognac","Коньяк"],["bordeaux","Бордо"]]],
+    ["steering","Руль",[["leather","Круглый · кожа"],["sport","Rally 330 · три спицы"]]],
+    ["selector","Ручка КПП",[["factory","Штатная"],["silver","Алюминий"],["bronze","Бронза"]]],
+    ["dashboard","Торпедо",[["leather","Кожа"],["brushed","Металлик"]]],
+    ["seat","Кресла",[["touring","Туринг"],["bucket","Спорт"]]]
+  ].map(([key,label,options])=><fieldset disabled><legend>{label}</legend>{(options as string[][]).map(([value,name],i)=><button type="button" data-interior={key} data-option={value} aria-pressed={i===0}>{name}</button>)}</fieldset>)}
+  </div>
+  <dialog aria-label="Полноэкранный просмотр Porsche"><button class="close" type="button">Закрыть ×</button></dialog>
+  <fieldset disabled hidden data-panel="wheels"><legend>Отделка</legend>
+    <button type="button" data-rim="original" aria-pressed="true">Графит</button>
+    <button type="button" data-rim="bronze" aria-pressed="false">Бронза</button>
+    <button type="button" data-rim="titanium" aria-pressed="false">Титан</button>
+    <button type="button" data-rim="champagne" aria-pressed="false">Шампань</button>
+  </fieldset>
+  <small>Модель <a href="https://sketchfab.com/3d-models/porsche-911-gt3-rs-4318ed7d70544b01bdd9dfaadfcd063a">RES1N</a> · адаптация для WebGL · <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a></small>
+</div>
+<script>
+  const root = document.querySelector<HTMLElement>('.config')!;
+  const orbit = root.querySelector<HTMLElement>('.orbit')!;
+  const hint = root.querySelector<HTMLElement>('.hint')!;
+  function fallback() {
+    root.dataset.ready = 'false';
+    orbit.tabIndex = -1;
+    root.querySelectorAll('fieldset').forEach(el => el.disabled = true);
+    hint.textContent = 'Студийный кадр · для вращения требуется WebGL 2';
+  }
+  const observer = new IntersectionObserver(async ([entry]) => {
+    if (!entry.isIntersecting) return;
+    observer.disconnect();
+    try {
+      const {createShowroom} = await import('../scripts/showroom.js');
+      const viewer = await createShowroom(orbit, matchMedia('(prefers-reduced-motion: reduce)'), fallback);
+      root.dataset.ready = 'true';
+      orbit.tabIndex = 0;
+      const expand=root.querySelector<HTMLButtonElement>('.expand')!;
+      const dialog=root.querySelector('dialog')!;
+      const sections = root.querySelectorAll<HTMLButtonElement>('[data-section]');
+      sections.forEach(tab=>{
+        tab.disabled=false;
+        tab.onclick=()=>{
+          const group=tab.dataset.section!;
+          sections.forEach(t=>t.setAttribute('aria-pressed',String(t===tab)));
+          root.querySelectorAll<HTMLElement>('[data-panel]').forEach(panel=>panel.hidden=panel.dataset.panel!==group);
+          viewer.view(group);
+          hint.textContent=group==='cabin'?'Осмотр — потяните или нажмите стрелки. Выберите деталь для крупного плана.':'Потяните, чтобы повернуть';
+          if(group==='cabin') tab.focus();
+        };
+      });
+      const dot=orbit.querySelector<HTMLButtonElement>('.door-dot')!;
+      dot.onclick=()=>{if(dialog.open) dialog.close();root.querySelector<HTMLButtonElement>('[data-section=cabin]')!.click();};
+      expand.disabled=false;
+      expand.onclick=()=>{dialog.append(orbit);dialog.showModal();orbit.focus();};
+      dialog.querySelector('button')!.onclick=()=>dialog.close();
+      dialog.onclose=()=>{hint.before(orbit);expand.focus();};
+      hint.textContent = 'Потяните, чтобы повернуть';
+      root.querySelectorAll('fieldset').forEach(el => {
+        el.disabled = false;
+        el.addEventListener('click', e => {
+          const button = (e.target as Element).closest('button');
+          if (!button) return;
+          if(button.dataset.interior) viewer.setInterior(button.dataset.interior,button.dataset.option);
+          else if (button.dataset.paint) viewer.setColor(button.dataset.paint);
+          else if(button.dataset.group) viewer.setPart(button.dataset.group,button.dataset.option);
+          else viewer.setRim(button.dataset.rim);
+          el.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b === button)));
+        });
+      });
+    } catch { fallback(); }
+  }, {rootMargin:'250px'});
+  observer.observe(root);
+</script>
+<style>
+.config{min-width:0;border:1px solid #404044;border-radius:16px;overflow:hidden;background:#151517;color:#f5f5f5;padding:clamp(15px,2vw,28px)}
+.config header{display:flex;align-items:center;justify-content:space-between;font-size:clamp(16px,2vw,24px);letter-spacing:-.04em}
+.config header span{font:600 12px monospace;letter-spacing:.08em;color:#babac2}
+.orbit{position:relative;aspect-ratio:1.85;background:radial-gradient(ellipse at 50% 62%,#64656a 0%,#37383c 38%,#151517 74%);touch-action:pan-y;cursor:grab}
+.orbit:active{cursor:grabbing}.orbit img,.orbit :global(canvas){width:100%;height:100%;object-fit:contain;position:absolute;inset:0}
+.config[data-ready=true] img,.config[data-ready=false] :global(canvas){display:none}
+.hint{text-align:center;color:#bcbcc3;font-size:.8rem;margin:0 0 16px}
+fieldset{border:0;border-top:1px solid #36363b;margin:0;padding:8px 0;min-width:0}
+legend{float:left;width:65px;line-height:44px;font-size:.86rem;color:#cdccd1}
+button{border:1px solid transparent;color:#ddd;background:transparent;border-radius:7px;min-height:44px;padding:0 9px;cursor:pointer;font-size:.86rem}
+button[aria-pressed=true]{background:#333439;border-color:#77787d;color:white}
+button i{display:inline-block;width:14px;height:14px;border-radius:50%;margin-right:5px;background:var(--sample);vertical-align:-2px}
+small{display:block;color:#aeafb6;font-size:10px;margin-top:6px}small a{text-decoration:underline}
+@media(max-width:550px){legend{float:none;width:auto;line-height:1.4}button{padding:0 6px}.orbit{aspect-ratio:1.55}}
+dialog[open]{position:fixed;inset:0;margin:auto;width:100vw;max-width:none;height:100dvh;max-height:none;border:0;padding:0;background:#151517;color:white}
+dialog .orbit{width:100%;height:100%;aspect-ratio:auto}
+.close{position:absolute;z-index:2;right:16px;top:16px;background:#29292c}.expand{background:#29292c}
+legend{width:80px}button[data-paint] i{background:linear-gradient(120deg,#fff9,transparent 48%,#0005),var(--sample)}
+fieldset[hidden]{display:none}
+.config{background:#171819;border-color:#393b3d;border-radius:20px}
+.config header{padding-bottom:12px}.orbit{background:radial-gradient(ellipse at 52% 66%,#5a5b5e,#333537 45%,#171819 76%)}
+.switcher{display:flex;gap:4px;padding:4px;border:1px solid #414245;border-radius:12px;background:#101112;margin:14px 0}
+.switcher button{flex:1;line-height:1.2;color:#c5c4c0;border-radius:8px}
+.switcher button[aria-pressed=true]{background:#e4e0d9;color:#202020;border-color:#e4e0d9;font-weight:650}
+fieldset{border:0;padding:4px 0 10px}
+fieldset legend{float:none;width:auto;font-size:.8rem;line-height:1.6;margin-bottom:5px;color:#c5c3bf}
+fieldset button{margin:2px;background:#222426;border-color:#353739}
+fieldset button[aria-pressed=true]{border-color:#c2b59f;background:#373532;color:white}
+button i{width:20px;height:20px}.hint{margin:5px 0 10px}
+@media(max-width:550px){.switcher button{font-size:.8rem}.config header{gap:8px}.config{padding:12px}}
+/* Every row, including an incomplete last row, shares the stage centre. */
+.config{width:min(100%,980px);margin-inline:auto;text-align:center}
+.config header{flex-direction:column;justify-content:center;gap:6px}
+.orbit{max-width:900px;margin-inline:auto}
+dialog .orbit{max-width:none}
+.switcher,fieldset{width:min(100%,780px);margin-inline:auto}
+.switcher{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))}
+fieldset:not([hidden]){display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+fieldset legend{float:none;width:100%;text-align:center;margin:0 auto 8px}
+fieldset button{display:inline-flex;align-items:center;justify-content:center;margin:0;min-width:min(124px,100%)}
+[data-panel=body] button{width:calc((100% - 18px)/4);min-width:0}
+fieldset button i{flex-shrink:0}
+@media(max-width:680px){[data-panel=body] button{width:calc((100% - 6px)/2)}fieldset button{min-width:0;padding-inline:10px}}
+.door-dot{position:absolute;z-index:2;transform:translate(-50%,-50%);width:44px;height:44px;padding:0;background:transparent;border:0}
+.door-dot::after{content:"";position:absolute;inset:14px;border-radius:50%;background:#fff5df;border:2px solid #37342d;box-shadow:0 0 0 4px #ffe1ab70,0 0 14px #fff0d8}
+.door-dot[hidden],.config[data-ready=false] .door-dot{display:none}
+@media(prefers-reduced-motion:no-preference){.door-dot::after{animation:door-glow 2s ease-in-out infinite alternate}@keyframes door-glow{to{box-shadow:0 0 0 7px #ffe1ab32,0 0 18px #fff0d8}}}
+.switcher{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:550px){.switcher{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.orbit.inside{touch-action:none}
+
+.cabin-options:not([hidden]) {
+  display: grid;
+  width: min(100%, 900px);
+  margin: 0 auto 16px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px 12px;
+}
+
+.cabin-options fieldset:not([hidden]) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  justify-content: stretch;
+  width: 100%;
+  padding: 4px 0 0;
+}
+
+.cabin-options legend {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.cabin-options button {
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+  line-height: 1.25;
+}
+
+@media (max-width: 900px) {
+  .cabin-options:not([hidden]) { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .cabin-options fieldset { grid-column: span 2; }
+  .cabin-options fieldset:nth-child(4) { grid-column: 2 / span 2; }
+}
+
+@media (max-width: 550px) {
+  .cabin-options:not([hidden]) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .cabin-options fieldset:nth-child(4) { grid-column: span 2; }
+  .cabin-options fieldset:last-child { grid-column: 2 / span 2; }
+}
+</style>

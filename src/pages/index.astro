@@ -3,16 +3,7 @@ import AssemblyFilm from "../components/AssemblyFilm.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import bmwAfterImage from "../assets/bmw-after.jpg";
 import bmwBeforeImage from "../assets/bmw-before.jpg";
-import carPreviewImage from "../assets/car-preview.png";
-import bodyMain from "../assets/surfaces/body_main.png";
-import frontBumper from "../assets/surfaces/front_bumper.png";
-import frontWheel from "../assets/surfaces/front_wheel.png";
-import glass from "../assets/surfaces/glass.png";
-import mirror from "../assets/surfaces/mirror.png";
-import rearBumper from "../assets/surfaces/rear_bumper.png";
-import rearWheel from "../assets/surfaces/rear_wheel.png";
-import roofUpperShell from "../assets/surfaces/roof_upper_shell.png";
-import sideSkirt from "../assets/surfaces/side_skirt.png";
+import Configurator from "../components/Configurator.astro";
 
 const benefitCards = [
   {
@@ -79,27 +70,9 @@ const decisionStages = [
   }
 ];
 
-const spotlightBenefits = [
-  "Реальное фото, не 3D-шаблон.",
-  "Меняются только выбранные элементы.",
-  "Один вариант — до 20 секунд."
-];
-
 const heroStats = [
   { label: "Конверсия", value: "+45%" },
   { label: "Средний чек", value: "+11%" }
-];
-
-const spotlightSurfaces = [
-  { id: "body-main", title: "Основной кузов", url: bodyMain, delay: "0s" },
-  { id: "front-bumper", title: "Передний бампер", url: frontBumper, delay: "1.7s" },
-  { id: "front-wheel", title: "Переднее колесо", url: frontWheel, delay: "3.4s" },
-  { id: "mirror", title: "Зеркало", url: mirror, delay: "5.1s" },
-  { id: "roof-shell", title: "Крыша", url: roofUpperShell, delay: "6.8s" },
-  { id: "rear-wheel", title: "Заднее колесо", url: rearWheel, delay: "8.5s" },
-  { id: "glass", title: "Стекло", url: glass, delay: "10.2s" },
-  { id: "rear-bumper", title: "Задний бампер", url: rearBumper, delay: "11.9s" },
-  { id: "side-skirt", title: "Порог", url: sideSkirt, delay: "13.6s" }
 ];
 
 const painQuotes = [
@@ -250,16 +223,82 @@ const faqSchema = {
   canonical="/"
 >
   <Fragment slot="head">
+    <script is:inline>
+      (() => {
+        const motion = matchMedia("(prefers-reduced-motion: reduce)");
+        const root = document.documentElement;
+
+        if (!motion.matches && !location.hash && !scrollY && !document.hidden) {
+          const intro = new AbortController();
+          const options = { signal: intro.signal };
+          root.classList.add("landing-opening");
+
+          function reveal(animate = true) {
+            if (!root.classList.contains("landing-opening")) return;
+            const stage = document.querySelector(".showroom-film .assembly-film");
+            const start = stage?.getBoundingClientRect();
+            const transition = animate && !motion.matches && !scrollY && start;
+            if (transition) root.classList.add("landing-revealed");
+            root.classList.remove("landing-opening");
+            if (transition) {
+              const end = stage.getBoundingClientRect();
+              const offsetX = (start.left + start.width / 2) - (end.left + end.width / 2);
+              const offsetY = start.top - end.top;
+              const scale = end.width ? start.width / end.width : 1;
+              stage.animate([
+                { transform: `translate(${offsetX}px, ${offsetY}px) scale(${scale})` },
+                { transform: "translate(0, 0) scale(1)" },
+              ], { duration: 760, easing: "cubic-bezier(.22,.75,.25,1)" });
+            }
+            clearTimeout(deadline);
+            intro.abort();
+          }
+
+          const deadline = setTimeout(reveal, 3800);
+          const leave = () => reveal(false);
+          document.addEventListener("timeupdate", event => {
+            const video = event.target;
+            if (video.matches?.(".showroom-film video") && video.currentTime >= .65) reveal();
+          }, { ...options, capture: true });
+          document.addEventListener("error", event => {
+            if (event.target.matches?.(".showroom-film video")) leave();
+          }, { ...options, capture: true });
+          window.addEventListener("wheel", leave, { ...options, passive: true });
+          window.addEventListener("scroll", () => { if (scrollY) leave(); }, { ...options, passive: true });
+          window.addEventListener("hashchange", leave, options);
+          window.addEventListener("keydown", leave, options);
+          document.addEventListener("focusin", leave, options);
+          motion.addEventListener("change", leave, options);
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+          if (motion.matches || !("IntersectionObserver" in window)) return;
+          const observer = new IntersectionObserver(entries => {
+            for (const {target, isIntersecting} of entries) {
+              if (!isIntersecting) continue;
+              observer.unobserve(target);
+              if (!motion.matches && !target.matches(":target, :focus-within") && !target.querySelector(":target")) {
+                target.classList.add("section-arrived");
+                target.addEventListener("focusin", () => target.classList.remove("section-arrived"), { once: true });
+              }
+            }
+          }, { threshold: 0, rootMargin: "0px 0px -32px" });
+          for (const section of document.querySelectorAll(".landing-content > section:not(.showroom), .site-footer")) {
+            observer.observe(section);
+          }
+        }, { once: true });
+      })();
+    </script>
     <script type="application/ld+json" set:html={JSON.stringify(organizationSchema)} />
     <script type="application/ld+json" set:html={JSON.stringify(softwareSchema)} />
     <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
   </Fragment>
 
-  <main class="page-shell" id="top">
+  <div class="page-shell" id="top">
     <header class="site-header">
       <a class="brand-mark" href="#top">
-        <span class="brand-mark-dot"></span>
-        <span>CarRestyle AI</span>
+        <span class="brand-symbol" aria-hidden="true"><i></i><i></i></span>
+        <span>carrestyle</span> <span class="brand-ai">AI</span>
       </a>
 
       <nav class="site-nav" aria-label="Навигация по лендингу">
@@ -271,372 +310,344 @@ const faqSchema = {
         <a href="#faq">Вопросы</a>
       </nav>
 
-      <a class="button button-primary header-cta" href="#contact">Получить демо</a>
+      <a class="button button-secondary header-cta" href="https://app.carrestyleai.ru/">Открыть студию <span aria-hidden="true">↗</span></a>
     </header>
 
-    <section class="hero">
-      <div class="hero-copy panel">
-        <div class="hero-main">
-          <h1>Покажите клиенту его авто до начала работ</h1>
-          <p class="lead">
-            CarRestyle AI за 20 секунд показывает оклейку, антихром или диски
-            на реальном фото машины клиента. Меньше «я подумаю», больше записей в день консультации.
-          </p>
-
-          <div class="hero-actions">
-            <a class="button button-primary" href="#contact">Получить демо-доступ</a>
-            <a class="hero-scroll-link" href="#spotlight">Посмотреть, как работает →</a>
+    <main class="landing-content" id="main-content" tabindex="-1">
+      <section class="showroom" aria-labelledby="showroom-title">
+        <div class="showroom-intro">
+          <h1 id="showroom-title">Новый характер.<br /><em>Тот же автомобиль.</em></h1>
+          <p>Загрузите фото своего автомобиля, выберите модификацию в меню и посмотрите, как она будет выглядеть на вашей машине.</p>
+          <div class="showroom-actions">
+            <a class="button button-primary" href="https://app.carrestyleai.ru/">
+              Попробовать на своём фото <span aria-hidden="true">↗</span>
+            </a>
+            <a class="hero-scroll-link" href="#photo-comparison">
+              Посмотреть до и после <span aria-hidden="true">↓</span>
+            </a>
           </div>
-
-          <p class="hero-assurance">Демо на вашем кейсе · без установки · доступ с любого устройства</p>
         </div>
+        <div class="showroom-film"><AssemblyFilm /></div>
+      </section>
 
-        <aside class="hero-proof" aria-label="Ключевые показатели CarRestyle AI">
-          <div class="hero-proof-top">
-            <div>
-              <span>Live demo</span>
-              <p>Реальное фото машины клиента → готовый визуал</p>
+      <section class="hero" id="live-demo" aria-labelledby="demo-title">
+        <div class="hero-copy panel">
+          <div class="hero-main">
+            <h2 id="demo-title">Покажите клиенту его авто до начала работ</h2>
+            <p class="lead">
+              CarRestyle AI за 20 секунд показывает оклейку, антихром или диски
+              на реальном фото машины клиента. Меньше «я подумаю», больше записей в день консультации.
+            </p>
+
+            <div class="hero-actions">
+              <a class="button button-primary" href="#contact">Получить демо-доступ</a>
+              <a class="hero-scroll-link" href="#spotlight">Попробовать 3D-демо →</a>
             </div>
-            <strong>20 сек</strong>
+
+            <p class="hero-assurance">Демо на вашем кейсе · без установки · доступ с любого устройства</p>
           </div>
 
-          <div class="hero-compare-shell">
-            <div class="hero-compare-stage" style="--compare-position: 50%;">
-              <div class="hero-compare-after-panel">
-                <img
-                  alt="Автомобиль после визуализации"
-                  class="hero-compare-image hero-compare-after-image"
-                  decoding="async"
-                  fetchpriority="high"
-                  src={bmwAfterImage.src}
-                />
-              </div>
-              <div class="hero-compare-before-panel">
-                <img
-                  alt="Автомобиль до визуализации"
-                  class="hero-compare-image hero-compare-before-image"
-                  decoding="async"
-                  fetchpriority="high"
-                  src={bmwBeforeImage.src}
-                />
-              </div>
-              <span class="hero-compare-label hero-compare-label-before">До</span>
-              <span class="hero-compare-label hero-compare-label-after">После</span>
-              <button class="hero-compare-fullscreen" type="button">Во весь экран</button>
-              <span class="hero-compare-handle" aria-hidden="true"><span></span></span>
-              <input
-                aria-label="Сравнить автомобиль до и после"
-                autocomplete="off"
-                class="hero-compare-range"
-                data-default-value="50"
-                max="100"
-                min="0"
-                type="range"
-                value="50"
-              />
-            </div>
-          </div>
-
-          <div class="hero-proof-grid">
-            {heroStats.map((item) => (
+          <aside class="hero-proof" id="photo-comparison" aria-label="Интерактивное сравнение CarRestyle AI">
+            <div class="hero-proof-top">
               <div>
-                <span>{item.label}</span>
-                <strong>{item.value}</strong>
+                <span>Интерактивное сравнение</span>
+                <p>Реальное фото машины клиента → готовый визуал</p>
               </div>
-            ))}
-          </div>
+              <strong>20 сек</strong>
+            </div>
 
-          <div class="hero-proof-flow" aria-label="Процесс демонстрации">
-            <span>Фото</span>
-            <span>Зоны</span>
-            <span>Стиль</span>
-            <span>Запись</span>
-          </div>
-        </aside>
-      </div>
-      <AssemblyFilm />
-    </section>
-
-    <section class="pain-section panel">
-      <div class="pain-copy">
-        <p class="eyebrow">Знакомая ситуация?</p>
-        <h2>Клиент попросил время подумать и не вернулся?</h2>
-        <p>
-          Каталог и референсы не отвечают на главный вопрос: как это будет выглядеть
-          на моей машине?
-        </p>
-      </div>
-
-      <div class="pain-quotes" aria-label="Типичные возражения клиентов">
-        {painQuotes.map((quote, index) => (
-          <p>
-            <span>{String(index + 1).padStart(2, "0")}</span>
-            {quote}
-          </p>
-        ))}
-      </div>
-
-      <p class="pain-transition">
-        CarRestyle AI убирает неопределённость до договора.
-      </p>
-    </section>
-
-    <section class="spotlight-section panel" id="spotlight">
-      <div class="spotlight-copy">
-        <p class="eyebrow">Как это выглядит</p>
-        <h2>Фокус на визуал: стиль сразу на авто клиента</h2>
-        <p>
-          Смотрите на подсветку зон: сервис меняет только выбранные элементы,
-          сохраняя реальное фото автомобиля.
-        </p>
-
-        <ul class="benefit-list">
-          {spotlightBenefits.map((benefit) => (
-            <li>{benefit}</li>
-          ))}
-        </ul>
-      </div>
-
-      <div class="spotlight-stage-wrap">
-        <div class="car-spotlight-shell" aria-label="Анимация подсветки деталей автомобиля">
-          <div class="car-spotlight-copy">
-            <span class="chip-label">Генерация — до 20 секунд</span>
-            <strong class="chip-value">Кузов · диски · детали</strong>
-            <span class="chip-subvalue">подсветка выбранных зон</span>
-          </div>
-
-          <div class="car-spotlight-host">
-            <div class="car-spotlight-aura car-spotlight-aura-left"></div>
-            <div class="car-spotlight-aura car-spotlight-aura-right"></div>
-
-            <div class="car-spotlight-stage">
-              <img
-                alt="Контур автомобиля для визуализации"
-                class="car-spotlight-preview-image"
-                decoding="async"
-                loading="lazy"
-                src={carPreviewImage.src}
-              />
-
-              {spotlightSurfaces.map((surface) => (
-                <span
-                  aria-hidden="true"
-                  class="car-spotlight-surface-layer"
-                  style={`--surface-url: url(${surface.url.src}); --surface-delay: ${surface.delay};`}
-                >
+            <div class="hero-compare-shell">
+              <div class="hero-compare-stage" style="--compare-position: 50%;">
+                <div class="hero-compare-after-panel">
                   <img
-                    alt=""
-                    class="car-spotlight-surface-outline"
+                    alt="Автомобиль после визуализации"
+                    class="hero-compare-image hero-compare-after-image"
                     decoding="async"
                     loading="lazy"
-                    src={surface.url.src}
+                    width={bmwAfterImage.width}
+                    height={bmwAfterImage.height}
+                    src={bmwAfterImage.src}
                   />
-                  <span class="car-spotlight-surface-fill"></span>
-                </span>
+                </div>
+                <div class="hero-compare-before-panel">
+                  <img
+                    alt="Автомобиль до визуализации"
+                    class="hero-compare-image hero-compare-before-image"
+                    decoding="async"
+                    loading="lazy"
+                    width={bmwBeforeImage.width}
+                    height={bmwBeforeImage.height}
+                    src={bmwBeforeImage.src}
+                  />
+                </div>
+                <span class="hero-compare-label hero-compare-label-before">До</span>
+                <span class="hero-compare-label hero-compare-label-after">После</span>
+                <button class="hero-compare-fullscreen" type="button">Во весь экран</button>
+                <span class="hero-compare-handle" aria-hidden="true"><span></span></span>
+                <input
+                  aria-label="Сравнить автомобиль до и после"
+                  autocomplete="off"
+                  class="hero-compare-range"
+                  data-default-value="50"
+                  max="100"
+                  min="0"
+                  type="range"
+                  value="50"
+                />
+              </div>
+            </div>
+
+            <div class="hero-proof-grid">
+              {heroStats.map((item) => (
+                <div>
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                </div>
               ))}
             </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="pain-section panel">
+        <div class="pain-copy">
+          <p class="eyebrow">Знакомая ситуация?</p>
+          <h2>Клиент попросил время подумать и не вернулся?</h2>
+          <p>
+            Каталог и референсы не отвечают на главный вопрос: как это будет выглядеть
+            на моей машине?
+          </p>
+        </div>
+
+        <div class="pain-quotes" role="group" aria-label="Типичные возражения клиентов">
+          {painQuotes.map((quote, index) => (
+            <p>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              {quote}
+            </p>
+          ))}
+        </div>
+
+        <p class="pain-transition">
+          CarRestyle AI убирает неопределённость до договора.
+        </p>
+      </section>
+
+      <section class="spotlight-section panel" id="spotlight">
+        <div class="spotlight-copy">
+          <p class="eyebrow">Интерактивное демо</p>
+          <h2>Примерьте изменения на Porsche</h2>
+          <p>Поверните 3D-модель и попробуйте разные цвета кузова, диски и варианты салона.</p>
+        </div>
+        <Configurator />
+        <div class="spotlight-next">
+          <h3>Как это будет выглядеть на вашем авто?</h3>
+          <p>Откройте студию, загрузите своё фото и выберите изменение.</p>
+          <a class="button button-primary" href="https://app.carrestyleai.ru/">
+            Попробовать на своём фото <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="section-block" id="benefits">
+        <div class="section-heading">
+          <p class="eyebrow">Зачем это бизнесу</p>
+          <h2>CarRestyle AI превращает сомнения клиента в уверенное «Делаем!»</h2>
+        </div>
+
+        <div class="card-grid card-grid-four">
+          {benefitCards.map((item) => (
+            <article class="value-card panel">
+              <div class="value-card-head">
+                <span class="value-number">{item.number}</span>
+                <strong>{item.label}</strong>
+              </div>
+              <h3>{item.title}</h3>
+              <p>{item.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section class="use-cases section-block">
+        <div class="section-heading">
+          <p class="eyebrow">Идеально для ключевых услуг</p>
+          <h2>Помогаем продавать там, где результат нужно увидеть заранее</h2>
+        </div>
+
+        <div class="card-grid card-grid-three">
+          {useCases.map((item) => (
+            <article class="info-card panel">
+              <span class="service-mark" aria-hidden="true"></span>
+              <h3>{item.title}</h3>
+              <p>{item.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section class="decision-flow panel" id="how-it-works">
+        <div class="decision-flow-copy">
+          <p class="eyebrow">Простой процесс работы</p>
+          <h2>4 шага от фотографии до закрытой сделки</h2>
+          <p>
+            Без Photoshop и сложного софта. Всё укладывается в консультацию.
+          </p>
+        </div>
+
+        <div class="decision-rail" role="group" aria-label="Сценарий работы с CarRestyle AI">
+          {decisionStages.map((stage) => (
+            <article class="decision-stage">
+              <span class="decision-node" aria-hidden="true"></span>
+              <span class="decision-index">{stage.index}</span>
+              <h3>{stage.title}</h3>
+              <p>{stage.text}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section class="testimonials-section section-block" id="testimonials">
+        <div class="section-heading">
+          <p class="eyebrow">Говорят студии-участники пилота</p>
+          <h2>Что изменилось после первого месяца</h2>
+        </div>
+
+        <div class="card-grid card-grid-three">
+          {testimonials.map((item) => (
+            <article class="testimonial-card panel">
+              <blockquote>{item.quote}</blockquote>
+              <div class="testimonial-author">
+                <span aria-hidden="true">{item.author.slice(0, 1)}</span>
+                <p>
+                  <strong>{item.author}</strong>
+                  <small>{item.role}</small>
+                </p>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section class="pricing-section panel" id="pricing">
+        <div class="section-heading">
+          <p class="eyebrow">Прозрачное ценообразование</p>
+          <h2>Выберите план под размер вашей студии</h2>
+        </div>
+
+        <div class="pricing-grid" role="group" aria-label="Тарифы CarRestyle AI">
+          {pricingPlans.map((plan) => (
+            <article class={`pricing-card${plan.featured ? " is-featured" : ""}`}>
+              <div class="pricing-card-head">
+                <span>{plan.badge}</span>
+                <h3>{plan.name}</h3>
+              </div>
+              <strong>{plan.price}</strong>
+              <p>{plan.generations} генераций в месяц</p>
+              <span>{plan.audience}</span>
+              <ul>
+                {plan.features.map((feature) => (
+                  <li>{feature}</li>
+                ))}
+              </ul>
+              <a class="button button-secondary pricing-cta" href="#contact">Выбрать план</a>
+            </article>
+          ))}
+        </div>
+
+        <p class="pricing-note">
+          Генерация до 20 секунд. Доступ с любого устройства. Оплата в рублях.
+        </p>
+      </section>
+
+      <section class="faq-section section-block" id="faq">
+        <div class="section-heading">
+          <p class="eyebrow">Частые вопросы</p>
+          <h2>Отвечаем на главные вопросы</h2>
+        </div>
+
+        <div class="faq-list">
+          {faqItems.map((item) => (
+            <details class="faq-item">
+              <summary>{item.question}</summary>
+              <p>{item.answer}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
+      <section class="contact panel" id="contact">
+        <div class="contact-copy">
+          <p class="eyebrow">Получить демонстрацию</p>
+          <h2>Готовы продавать стайлинг по-новому?</h2>
+          <p>
+            Покажем сервис на ваших проектах и дадим доступ к платформе.
+          </p>
+
+          <div class="contact-benefits">
+            <span>Демо на ваших проектах</span>
+            <span>Генерация до 20 сек</span>
+            <span>Оплата в рублях</span>
+          </div>
+
+          <div class="contact-route">
+            <strong>Что будет после заявки</strong>
+            <p>Возьмём один кейс и пройдём сценарий реальной консультации.</p>
           </div>
         </div>
-      </div>
-    </section>
 
-    <section class="section-block" id="benefits">
-      <div class="section-heading">
-        <p class="eyebrow">Зачем это бизнесу</p>
-        <h2>CarRestyle AI превращает сомнения клиента в уверенное «Делаем!»</h2>
-      </div>
+        <form
+          class="lead-form"
+          action="/send.php"
+          data-lead-form
+          method="post"
+        >
+          <label class="lead-field">
+            <span>Имя</span>
+            <input autocomplete="name" name="Имя" placeholder="Как к вам обращаться" required type="text" />
+          </label>
 
-      <div class="card-grid card-grid-four">
-        {benefitCards.map((item) => (
-          <article class="value-card panel">
-            <div class="value-card-head">
-              <span class="value-number">{item.number}</span>
-              <strong>{item.label}</strong>
-            </div>
-            <h3>{item.title}</h3>
-            <p>{item.text}</p>
-          </article>
-        ))}
-      </div>
-    </section>
+          <label class="lead-field">
+            <span>Студия</span>
+            <input autocomplete="organization" name="Студия" placeholder="Название студии" type="text" />
+          </label>
 
-    <section class="use-cases section-block">
-      <div class="section-heading">
-        <p class="eyebrow">Идеально для ключевых услуг</p>
-        <h2>Помогаем продавать там, где результат нужно увидеть заранее</h2>
-      </div>
+          <label class="lead-field">
+            <span>Контакт</span>
+            <input autocomplete="email" name="Контакт" placeholder="Почта, телефон или Telegram" required type="text" />
+          </label>
 
-      <div class="card-grid card-grid-three">
-        {useCases.map((item) => (
-          <article class="info-card panel">
-            <span class="service-mark" aria-hidden="true"></span>
-            <h3>{item.title}</h3>
-            <p>{item.text}</p>
-          </article>
-        ))}
-      </div>
-    </section>
+          <label class="lead-field lead-field-full">
+            <span>Что вы хотите показывать клиентам</span>
+            <textarea
+              name="Сценарий"
+              placeholder="Например: оклейка, антихром, цвет, диски, тюнинг"
+              rows="4"
+            ></textarea>
+          </label>
 
-    <section class="decision-flow panel" id="how-it-works">
-      <div class="decision-flow-copy">
-        <p class="eyebrow">Простой процесс работы</p>
-        <h2>4 шага от фотографии до закрытой сделки</h2>
-        <p>
-          Без Photoshop и сложного софта. Всё укладывается в консультацию.
-        </p>
-      </div>
+          <label class="lead-consent lead-field-full">
+            <input name="Согласие" required type="checkbox" value="Принято" />
+            <span>
+              Я принимаю <a href="/user-agreement/" target="_blank" rel="noopener">пользовательское соглашение</a> и
+              даю согласие на обработку персональных данных для связи по заявке.
+            </span>
+          </label>
 
-      <div class="decision-rail" aria-label="Сценарий работы с CarRestyle AI">
-        {decisionStages.map((stage) => (
-          <article class="decision-stage">
-            <span class="decision-node" aria-hidden="true"></span>
-            <span class="decision-index">{stage.index}</span>
-            <h3>{stage.title}</h3>
-            <p>{stage.text}</p>
-          </article>
-        ))}
-      </div>
-    </section>
+          <button class="button button-primary lead-submit" type="submit">
+            Получить демо-доступ
+          </button>
 
-    <section class="testimonials-section section-block" id="testimonials">
-      <div class="section-heading">
-        <p class="eyebrow">Говорят студии-участники пилота</p>
-        <h2>Что изменилось после первого месяца</h2>
-      </div>
+          <p class="lead-status" data-lead-status role="status" aria-live="polite"></p>
 
-      <div class="card-grid card-grid-three">
-        {testimonials.map((item) => (
-          <article class="testimonial-card panel">
-            <blockquote>{item.quote}</blockquote>
-            <div class="testimonial-author">
-              <span aria-hidden="true">{item.author.slice(0, 1)}</span>
-              <p>
-                <strong>{item.author}</strong>
-                <small>{item.role}</small>
-              </p>
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
+          <p class="lead-note">
+            После отправки мы получим заявку на почту и свяжемся с вами. Или напишите напрямую на{" "}
+            <a href="mailto:carrestyleai@mail.ru">carrestyleai@mail.ru</a>
+          </p>
+        </form>
+      </section>
 
-    <section class="pricing-section panel" id="pricing">
-      <div class="section-heading">
-        <p class="eyebrow">Прозрачное ценообразование</p>
-        <h2>Выберите план под размер вашей студии</h2>
-      </div>
-
-      <div class="pricing-grid" aria-label="Тарифы CarRestyle AI">
-        {pricingPlans.map((plan) => (
-          <article class={`pricing-card${plan.featured ? " is-featured" : ""}`}>
-            <div class="pricing-card-head">
-              <span>{plan.badge}</span>
-              <h3>{plan.name}</h3>
-            </div>
-            <strong>{plan.price}</strong>
-            <p>{plan.generations} генераций в месяц</p>
-            <span>{plan.audience}</span>
-            <ul>
-              {plan.features.map((feature) => (
-                <li>{feature}</li>
-              ))}
-            </ul>
-            <a class="button button-secondary pricing-cta" href="#contact">Выбрать план</a>
-          </article>
-        ))}
-      </div>
-
-      <p class="pricing-note">
-        Генерация до 20 секунд. Доступ с любого устройства. Оплата в рублях.
-      </p>
-    </section>
-
-    <section class="faq-section section-block" id="faq">
-      <div class="section-heading">
-        <p class="eyebrow">Частые вопросы</p>
-        <h2>Отвечаем на главные вопросы</h2>
-      </div>
-
-      <div class="faq-list">
-        {faqItems.map((item) => (
-          <details class="faq-item">
-            <summary>{item.question}</summary>
-            <p>{item.answer}</p>
-          </details>
-        ))}
-      </div>
-    </section>
-
-    <section class="contact panel" id="contact">
-      <div class="contact-copy">
-        <p class="eyebrow">Получить демонстрацию</p>
-        <h2>Готовы продавать стайлинг по-новому?</h2>
-        <p>
-          Покажем сервис на ваших проектах и дадим доступ к платформе.
-        </p>
-
-        <div class="contact-benefits">
-          <span>Демо на ваших проектах</span>
-          <span>Генерация до 20 сек</span>
-          <span>Оплата в рублях</span>
-        </div>
-
-        <div class="contact-route">
-          <strong>Что будет после заявки</strong>
-          <p>Возьмём один кейс и пройдём сценарий реальной консультации.</p>
-        </div>
-      </div>
-
-      <form
-        class="lead-form"
-        action="/send.php"
-        data-lead-form
-        method="post"
-      >
-        <label class="lead-field">
-          <span>Имя</span>
-          <input autocomplete="name" name="Имя" placeholder="Как к вам обращаться" required type="text" />
-        </label>
-
-        <label class="lead-field">
-          <span>Студия</span>
-          <input autocomplete="organization" name="Студия" placeholder="Название студии" type="text" />
-        </label>
-
-        <label class="lead-field">
-          <span>Контакт</span>
-          <input autocomplete="email" name="Контакт" placeholder="Почта, телефон или Telegram" required type="text" />
-        </label>
-
-        <label class="lead-field lead-field-full">
-          <span>Что вы хотите показывать клиентам</span>
-          <textarea
-            name="Сценарий"
-            placeholder="Например: оклейка, антихром, цвет, диски, тюнинг"
-            rows="4"
-          ></textarea>
-        </label>
-
-        <label class="lead-consent lead-field-full">
-          <input name="Согласие" required type="checkbox" value="Принято" />
-          <span>
-            Я принимаю <a href="/user-agreement/" target="_blank" rel="noopener">пользовательское соглашение</a> и
-            даю согласие на обработку персональных данных для связи по заявке.
-          </span>
-        </label>
-
-        <button class="button button-primary lead-submit" type="submit">
-          Получить демо-доступ
-        </button>
-
-        <p class="lead-status" data-lead-status role="status" aria-live="polite"></p>
-
-        <p class="lead-note">
-          После отправки мы получим заявку на почту и свяжемся с вами. Или напишите напрямую на{" "}
-          <a href="mailto:carrestyleai@mail.ru">carrestyleai@mail.ru</a>
-        </p>
-      </form>
-    </section>
+    </main>
 
     <footer class="site-footer">
       <p>© 2026 CarRestyle AI — визуализация детейлинга и тюнинга на фото автомобиля клиента.</p>
@@ -649,7 +660,7 @@ const faqSchema = {
     <div class="mobile-sticky-cta">
       <a class="button button-primary" href="#contact">Получить демо</a>
     </div>
-  </main>
+  </div>
 
   <dialog class="compare-dialog" aria-label="Сравнение автомобиля до и после во весь экран">
     <div class="compare-dialog-shell">
@@ -716,11 +727,23 @@ const faqSchema = {
     const openCompareDialog = document.querySelector(".hero-compare-fullscreen");
     const closeCompareDialog = document.querySelector(".compare-dialog-close");
 
+    const inlineRange = document.querySelector("#photo-comparison .hero-compare-range");
+    const dialogRange = compareDialog?.querySelector(".hero-compare-range");
+
+    const copyComparePosition = (from, to) => {
+      if (!(from instanceof HTMLInputElement) || !(to instanceof HTMLInputElement)) return;
+      to.value = from.value;
+      to.dispatchEvent(new Event("input"));
+    };
+
     openCompareDialog?.addEventListener("click", () => {
       if (compareDialog instanceof HTMLDialogElement) {
+        copyComparePosition(inlineRange, dialogRange);
         compareDialog.showModal();
       }
     });
+
+    compareDialog?.addEventListener("close", () => copyComparePosition(dialogRange, inlineRange));
 
     closeCompareDialog?.addEventListener("click", () => {
       if (compareDialog instanceof HTMLDialogElement) {

@@ -404,7 +404,6 @@ h3 {
 
 .hero-proof-top span,
 .hero-proof-grid span,
-.hero-proof-flow span,
 .hero-preview-card span {
   color: var(--accent);
   text-transform: uppercase;
@@ -770,23 +769,6 @@ h3 {
   color: var(--text);
   font-size: 1.08rem;
   line-height: 1.1;
-}
-
-.hero-proof-flow {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.hero-proof-flow span {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 34px;
-  border-radius: var(--radius-md);
-  border: 1px solid rgba(141, 215, 255, 0.16);
-  background: rgba(255, 255, 255, 0.035);
-  color: rgba(230, 243, 255, 0.82);
 }
 
 .hero-assurance {
@@ -2542,8 +2524,7 @@ h3 {
     right: 11px;
   }
 
-  .hero-proof-grid,
-  .hero-proof-flow {
+  .hero-proof-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
