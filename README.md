@@ -42,7 +42,7 @@
 ## Стек
 
 - `Astro 5`
-- `React 19`
+- `three.js` — 3D-конфигуратор в секции «Демонстрация»
 - `TypeScript`
 - `CSS`
 
@@ -69,6 +69,27 @@ Preview production-сборки:
 
 ```bash
 npm run preview
+```
+
+## Деплой
+
+Сервер — `141.11.211.206` (Ubuntu, nginx, PHP-FPM), корень сайта — `/var/www/carrestyleai.ru`.
+Форма заявки (`public/send.php`) исполняется через PHP-FPM, поэтому хостинг без PHP не подходит.
+
+```bash
+npm run build
+rsync -rlt --delete --exclude=.DS_Store dist/ root@141.11.211.206:/var/www/carrestyleai.ru/
+```
+
+Блок nginx лежит на сервере в `/etc/nginx/sites-available/carrestyleai-landing`, отдельно от `app` и `api`.
+
+Карта окружения `public/config/interior.exr` — сжатая копия исходника
+`src/assets/environment/interior-float32.exr` (6,3 МБ → 0,4 МБ). Пересобрать:
+
+```bash
+/Applications/Blender.app/Contents/MacOS/Blender --background --factory-startup \
+  --python tools/environment-map.py -- convert \
+  src/assets/environment/interior-float32.exr public/config/interior.exr 512 256 ZIP
 ```
 
 ## Структура проекта

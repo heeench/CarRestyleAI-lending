@@ -17,15 +17,10 @@ const clamp = (n, low, high) => Math.max(low, Math.min(high, n));
 async function setLighting(renderer, scene) {
   const studio = new Scene();
   studio.background = new Color(.11, .12, .14);
-  // Blender's bundled interior studio light gives curved panels an environment to reflect.
-  let environment;
-  try {
-    environment = await new EXRLoader().loadAsync(import.meta.env.BASE_URL + 'config/interior.exr?v=2');
-    environment.mapping = EquirectangularReflectionMapping;
-    studio.background = environment;
-    studio.backgroundRotation.y = .85;
-    studio.backgroundIntensity = .62;
-  } catch { /* The local softboxes also work on their own. */ }
+  // The generator links its shaders one after another and waits for each. The first one is
+  // started here, so it finishes in the background while the environment downloads.
+  const pmrem = new PMREMGenerator(renderer);
+  pmrem.compileCubemapShader();
   const lights = [
     { where: [1.0, 4, 1.5], size: [6.4, 2.1], color: [4.4, 4.6, 5.0] },
     { where: [-2.4, 3.1, -4], size: [5.2, .85], color: [2.9, 3.1, 3.6] },
@@ -41,7 +36,17 @@ async function setLighting(renderer, scene) {
     card.lookAt(0, .65, 0);
     studio.add(card);
   }
-  const pmrem = new PMREMGenerator(renderer);
+  const cardsLinked = renderer.compileAsync(studio, new PerspectiveCamera());
+  // Blender's bundled interior studio light gives curved panels an environment to reflect.
+  let environment;
+  try {
+    environment = await new EXRLoader().loadAsync(import.meta.env.BASE_URL + 'config/interior.exr?v=3');
+    environment.mapping = EquirectangularReflectionMapping;
+    studio.background = environment;
+    studio.backgroundRotation.y = .85;
+    studio.backgroundIntensity = .62;
+  } catch { /* The local softboxes also work on their own. */ }
+  await cardsLinked;
   scene.environment = pmrem.fromScene(studio, .007).texture;
   scene.environmentIntensity = 1.05;
   pmrem.dispose();
@@ -101,6 +106,8 @@ export async function createShowroom(container, motion, onError) {
   renderer.toneMapping = ACESFilmicToneMapping;
   renderer.toneMappingExposure = .95;
   renderer.setClearColor(0x000000, 0);
+  // The per-program error check waits for each link to finish and would defeat the warm-up below.
+  renderer.debug.checkShaderErrors = import.meta.env.DEV;
 
   const scene = new Scene();
   const camera = new PerspectiveCamera(24, 1, .1, 42);
@@ -216,8 +223,9 @@ export async function createShowroom(container, motion, onError) {
   const marker=container.querySelector('.door-dot');
   const handle=new Vector3(-.35,.73,-.86);
   const projection=new Vector3(), eye=new Vector3(), aim=new Vector3();
-  const cabinLight=new HemisphereLight(0xfff5e8,0x414149,.52);
-  scene.add(cabinLight);cabinLight.visible=false;
+  // Always counted: hiding a light re-links every shader in the scene on the way into the cabin.
+  const cabinLight=new HemisphereLight(0xfff5e8,0x414149,0);
+  scene.add(cabinLight);
   let interior=false, progress=0, focus='steering';
   const views={
     steering:[[-.29,1.05,-.38],[.32,.78,-.28]],
@@ -239,9 +247,10 @@ export async function createShowroom(container, motion, onError) {
   let request = 0;
   let last = 0;
   let hasContext = true;
+  let warm = false;
 
   function schedule() {
-    if (hasContext && request === 0) request = requestAnimationFrame(render);
+    if (warm && hasContext && request === 0) request = requestAnimationFrame(render);
   }
 
   function render(now) {
@@ -301,7 +310,7 @@ export async function createShowroom(container, motion, onError) {
     lookAt.lerp(aim.copy(cabinAim).add(model.position),mix);
     camera.fov=exteriorFov+(70-exteriorFov)*mix;
     camera.near=.025;camera.updateProjectionMatrix();camera.lookAt(lookAt);camera.updateMatrixWorld();
-    cabinLight.visible=progress>.3;
+    cabinLight.intensity=progress>.3?.52:0;
     projection.copy(handle).add(model.position).project(camera);
     marker.hidden=interior || progress>0 || camera.position.z>-.45 || Math.abs(projection.x)>.94 || Math.abs(projection.y)>.92;
     marker.style.left=(50+50*projection.x)+'%';marker.style.top=(50-50*projection.y)+'%';
@@ -402,13 +411,45 @@ export async function createShowroom(container, motion, onError) {
     schedule();
   });
   const resize = new ResizeObserver(fit);
-  resize.observe(container);
   canvas.addEventListener('webglcontextlost', () => {
     hasContext = false;
     cancelAnimationFrame(request);
     resize.disconnect();
     onError();
   });
+
+  // Linking a shader program on first use blocks the main thread for about 200 ms each. That
+  // froze the page while the model appeared, on the way into the cabin and on the iridescent
+  // paint, so every variant the controls can reach is linked here while the poster is shown:
+  // in parallel where the browser compiles in the background, one material per frame elsewhere.
+  const nextFrame = () => new Promise(requestAnimationFrame);
+  async function linkPrograms() {
+    if (renderer.extensions.has('KHR_parallel_shader_compile')) return renderer.compileAsync(scene, camera);
+    const meshes = [];
+    scene.traverse(part => { if (part.isMesh) meshes.push(part); });
+    const shown = meshes.map(part => part.visible), linked = new Set();
+    meshes.forEach(part => part.visible = false);
+    renderer.shadowMap.needsUpdate = true;
+    for (const part of meshes) {
+      if (linked.has(part.material)) continue;
+      linked.add(part.material);
+      part.visible = true;
+      renderer.render(scene, camera);
+      await nextFrame();
+      part.visible = false;
+    }
+    meshes.forEach((part, i) => part.visible = shown[i]);
+  }
+  paint.iridescence = .9; paint.iridescenceIOR = 1.42;
+  await linkPrograms();
+  applyFinish('silver');
+  cabin.update('selector', 'silver');
+  await linkPrograms();
+  cabin.update('selector', 'factory');
+  if (!hasContext) throw new Error('WebGL context lost');
+  warm = true;
+
+  resize.observe(container);
   fit();
   cancelAnimationFrame(request);
   render(performance.now());
