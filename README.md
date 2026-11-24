@@ -82,6 +82,11 @@ rsync -rlt --delete --exclude=.DS_Store dist/ root@141.11.211.206:/var/www/carre
 ```
 
 Блок nginx лежит на сервере в `/etc/nginx/sites-available/carrestyleai-landing`, отдельно от `app` и `api`.
+HTTPS — сертификат Let's Encrypt, продлевается автоматически.
+
+Письма о заявках уходят через msmtp (`/etc/msmtprc` на сервере): SMTP Mail.ru от ящика `carrestyleai@mail.ru`.
+Пароль приложения задаётся там же скриптом `/root/set-mail-password.sh`, он же отправляет тестовое письмо.
+Пока пароль не задан, заявки всё равно сохраняются в бэкенд через `api.carrestyleai.ru/landing/leads`.
 
 Карта окружения `public/config/interior.exr` — сжатая копия исходника
 `src/assets/environment/interior-float32.exr` (6,3 МБ → 0,4 МБ). Пересобрать:

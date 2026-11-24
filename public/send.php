@@ -79,7 +79,8 @@ $headers = [
     'MIME-Version: 1.0',
     'Content-Type: text/plain; charset=UTF-8',
     'Content-Transfer-Encoding: 8bit',
-    'From: CarRestyle AI <no-reply@carrestyleai.ru>',
+    // The server sends through SMTP as this mailbox; Mail.ru refuses any other sender.
+    'From: CarRestyle AI <carrestyleai@mail.ru>',
     'Reply-To: CarRestyle AI <carrestyleai@mail.ru>',
 ];
 
